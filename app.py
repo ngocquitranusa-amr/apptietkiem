@@ -1,212 +1,340 @@
 import streamlit as st
+from datetime import date
 
-# ==============================
-# CẤU HÌNH TRANG
-# ==============================
+# ==========================================
+# CẤU HÌNH
+# ==========================================
 st.set_page_config(
-    page_title="Tính tiền gửi tiết kiệm",
-    page_icon="🏦",
-    layout="centered"
+    page_title="MoneyGo - Học & Tiết Kiệm",
+    page_icon="💰",
+    layout="wide"
 )
 
-st.title("🏦 TÍNH TIỀN GỬI TIẾT KIỆM")
-st.write("Tính toán tiền nhận được theo **lãi đơn** và **lãi kép**.")
+# ==========================================
+# CSS - GIAO DIỆN KIỂU APP HỌC TẬP
+# ==========================================
+st.markdown("""
+<style>
+    .main {
+        background-color: #f7f7f7;
+    }
+
+    .title {
+        font-size: 40px;
+        font-weight: 800;
+        text-align: center;
+        color: #58cc02;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: #777;
+        font-size: 18px;
+    }
+
+    .card {
+        background: white;
+        padding: 25px;
+        border-radius: 18px;
+        margin-bottom: 20px;
+        box-shadow: 0px 3px 10px rgba(0,0,0,0.08);
+    }
+
+    .money {
+        font-size: 32px;
+        font-weight: 800;
+        color: #58cc02;
+    }
+
+    .xp {
+        font-size: 24px;
+        font-weight: bold;
+        color: #ff9600;
+    }
+
+    .streak {
+        font-size: 24px;
+        font-weight: bold;
+        color: #ff4b4b;
+    }
+
+    .level {
+        font-size: 24px;
+        font-weight: bold;
+        color: #7c4dff;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ==========================================
+# SESSION STATE
+# ==========================================
+if "money" not in st.session_state:
+    st.session_state.money = 0
+
+if "xp" not in st.session_state:
+    st.session_state.xp = 0
+
+if "streak" not in st.session_state:
+    st.session_state.streak = 1
+
+if "level" not in st.session_state:
+    st.session_state.level = 1
+
+if "goal" not in st.session_state:
+    st.session_state.goal = 10_000_000
+
+# ==========================================
+# TIÊU ĐỀ
+# ==========================================
+st.markdown('<div class="title">💰 MoneyGo</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="subtitle">Học kỹ năng tài chính • Hoàn thành nhiệm vụ • Xây dựng khoản tiết kiệm</div>',
+    unsafe_allow_html=True
+)
 
 st.divider()
 
-# ==============================
-# NHẬP DỮ LIỆU
-# ==============================
+# ==========================================
+# SIDEBAR
+# ==========================================
+st.sidebar.title("📱 MoneyGo")
 
-# Số tiền gửi
-so_tien = st.number_input(
-    "💰 Số tiền gửi (VNĐ)",
-    min_value=0,
-    value=100_000_000,
-    step=1_000_000,
-    format="%d"
+menu = st.sidebar.radio(
+    "Chọn chức năng",
+    [
+        "🏠 Trang chủ",
+        "📚 Học tài chính",
+        "🎯 Nhiệm vụ",
+        "💰 Tiết kiệm",
+        "🏆 Thành tích"
+    ]
 )
 
-# Số tháng gửi
-so_thang = st.number_input(
-    "📅 Số tháng gửi",
-    min_value=1,
-    value=12,
-    step=1
-)
+# ==========================================
+# TRANG CHỦ
+# ==========================================
+if menu == "🏠 Trang chủ":
 
-# Lãi suất
-lai_suat = st.number_input(
-    "📈 Lãi suất (%/năm)",
-    min_value=0.0,
-    value=6.0,
-    step=0.1,
-    format="%.2f"
-)
-
-st.divider()
-
-# ==============================
-# NÚT TÍNH TOÁN
-# ==============================
-
-if st.button("🧮 TÍNH TOÁN", use_container_width=True):
-
-    # Kiểm tra dữ liệu
-    if so_tien <= 0:
-        st.error("Vui lòng nhập số tiền gửi lớn hơn 0.")
-        st.stop()
-
-    if so_thang <= 0:
-        st.error("Số tháng gửi phải lớn hơn 0.")
-        st.stop()
-
-    if lai_suat < 0:
-        st.error("Lãi suất không được nhỏ hơn 0.")
-        st.stop()
-
-    # ==========================================
-    # CHUYỂN ĐỔI LÃI SUẤT
-    # ==========================================
-
-    # Lãi suất năm dạng thập phân
-    r_nam = lai_suat / 100
-
-    # Thời gian gửi theo năm
-    so_nam = so_thang / 12
-
-    # ==========================================
-    # 1. TÍNH LÃI ĐƠN
-    # ==========================================
-
-    # Công thức:
-    # Tiền lãi = P * r * t
-    lai_don = so_tien * r_nam * so_nam
-
-    # Tổng tiền nhận được
-    tong_lai_don = so_tien + lai_don
-
-    # ==========================================
-    # 2. TÍNH LÃI KÉP
-    # ==========================================
-
-    # Quy đổi lãi suất năm thành lãi suất tháng
-    r_thang = r_nam / 12
-
-    # Công thức:
-    # A = P * (1 + r)^n
-    tong_lai_kep = so_tien * (1 + r_thang) ** so_thang
-
-    # Tiền lãi
-    lai_kep = tong_lai_kep - so_tien
-
-    # ==========================================
-    # HIỂN THỊ KẾT QUẢ
-    # ==========================================
-
-    st.success("✅ Đã tính toán thành công!")
-
-    st.subheader("📊 KẾT QUẢ")
-
-    # ------------------------------------------
-    # LÃI ĐƠN
-    # ------------------------------------------
-
-    st.markdown("### 🔵 1. Lãi đơn")
-
-    col1, col2 = st.columns(2)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.metric(
-            "Tiền lãi",
-            f"{lai_don:,.0f} VNĐ"
+        st.markdown(
+            f'<div class="card"><div class="xp">⭐ {st.session_state.xp} XP</div><small>Kinh nghiệm</small></div>',
+            unsafe_allow_html=True
         )
 
     with col2:
-        st.metric(
-            "Tổng tiền nhận",
-            f"{tong_lai_don:,.0f} VNĐ"
+        st.markdown(
+            f'<div class="card"><div class="streak">🔥 {st.session_state.streak}</div><small>Ngày liên tiếp</small></div>',
+            unsafe_allow_html=True
         )
 
-    # ------------------------------------------
-    # LÃI KÉP
-    # ------------------------------------------
-
-    st.markdown("### 🟢 2. Lãi kép")
-
-    col3, col4 = st.columns(2)
-
     with col3:
-        st.metric(
-            "Tiền lãi",
-            f"{lai_kep:,.0f} VNĐ"
+        st.markdown(
+            f'<div class="card"><div class="level">🏅 Level {st.session_state.level}</div><small>Cấp độ</small></div>',
+            unsafe_allow_html=True
         )
 
     with col4:
-        st.metric(
-            "Tổng tiền nhận",
-            f"{tong_lai_kep:,.0f} VNĐ"
+        st.markdown(
+            f'<div class="card"><div class="money">{st.session_state.money:,.0f}đ</div><small>Tiền tiết kiệm</small></div>',
+            unsafe_allow_html=True
         )
 
-    # ------------------------------------------
-    # SO SÁNH
-    # ------------------------------------------
+    st.subheader("🎯 Mục tiêu tiết kiệm")
+
+    progress = min(st.session_state.money / st.session_state.goal, 1)
+
+    st.progress(progress)
+
+    st.write(
+        f"Đã tiết kiệm: **{st.session_state.money:,.0f}đ** / "
+        f"**{st.session_state.goal:,.0f}đ**"
+    )
 
     st.divider()
 
-    st.subheader("📈 SO SÁNH")
+    st.subheader("📅 Nhiệm vụ hôm nay")
 
-    chenh_lech = tong_lai_kep - tong_lai_don
+    col1, col2, col3 = st.columns(3)
 
-    st.write(
-        f"**Lãi kép cao hơn lãi đơn:** "
-        f"**{chenh_lech:,.0f} VNĐ**"
+    with col1:
+        st.info("📚 Học 1 bài tài chính\n\n+20 XP")
+
+    with col2:
+        st.info("💰 Tiết kiệm hôm nay\n\n+30 XP")
+
+    with col3:
+        st.info("🧠 Làm bài kiểm tra\n\n+50 XP")
+
+# ==========================================
+# HỌC TÀI CHÍNH
+# ==========================================
+elif menu == "📚 Học tài chính":
+
+    st.header("📚 Học tài chính")
+
+    lessons = [
+        "💵 Bài 1: Tiền là gì?",
+        "🏦 Bài 2: Tiết kiệm",
+        "📈 Bài 3: Lãi suất",
+        "💳 Bài 4: Quản lý chi tiêu",
+        "📊 Bài 5: Đầu tư cơ bản"
+    ]
+
+    for i, lesson in enumerate(lessons):
+
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+
+        st.subheader(lesson)
+
+        if st.button(
+            "Bắt đầu học",
+            key=f"lesson_{i}"
+        ):
+            st.session_state.xp += 20
+
+            st.success(
+                f"🎉 Hoàn thành bài học! +20 XP\n\n"
+                f"Tổng XP: {st.session_state.xp}"
+            )
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# ==========================================
+# NHIỆM VỤ
+# ==========================================
+elif menu == "🎯 Nhiệm vụ":
+
+    st.header("🎯 Nhiệm vụ hôm nay")
+
+    st.write("Hoàn thành nhiệm vụ để nhận XP và duy trì streak.")
+
+    task1 = st.checkbox("📚 Học một bài tài chính (+20 XP)")
+    task2 = st.checkbox("💰 Tiết kiệm tiền hôm nay (+30 XP)")
+    task3 = st.checkbox("🧠 Trả lời câu hỏi (+50 XP)")
+
+    if st.button("🎁 Nhận XP"):
+
+        xp_gain = 0
+
+        if task1:
+            xp_gain += 20
+
+        if task2:
+            xp_gain += 30
+
+        if task3:
+            xp_gain += 50
+
+        st.session_state.xp += xp_gain
+
+        st.success(
+            f"🎉 Bạn nhận được +{xp_gain} XP!"
+        )
+
+# ==========================================
+# TIẾT KIỆM
+# ==========================================
+elif menu == "💰 Tiết kiệm":
+
+    st.header("💰 Ví tiết kiệm")
+
+    st.markdown(
+        f"""
+        <div class="card">
+            <div>💰 Số tiền hiện tại</div>
+            <div class="money">
+                {st.session_state.money:,.0f}đ
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    # ==========================================
-    # THÔNG TIN TÍNH TOÁN
-    # ==========================================
+    st.subheader("➕ Thêm tiền tiết kiệm")
 
-    with st.expander("🔎 Xem chi tiết cách tính"):
+    amount = st.number_input(
+        "Số tiền muốn thêm",
+        min_value=0,
+        step=10_000,
+        value=100_000
+    )
 
-        st.write(f"**Số tiền gửi:** {so_tien:,.0f} VNĐ")
-        st.write(f"**Thời gian gửi:** {so_thang} tháng")
-        st.write(f"**Lãi suất:** {lai_suat:.2f}%/năm")
+    if st.button("💵 Gửi vào quỹ"):
 
-        st.write(
-            f"**Thời gian quy đổi:** {so_nam:.2f} năm"
+        if amount > 0:
+
+            st.session_state.money += amount
+            st.session_state.xp += 30
+
+            st.success(
+                f"Đã thêm {amount:,.0f}đ vào quỹ tiết kiệm! "
+                f"+30 XP 🎉"
+            )
+
+    st.divider()
+
+    st.subheader("🎯 Mục tiêu tiết kiệm")
+
+    new_goal = st.number_input(
+        "Nhập mục tiêu",
+        min_value=100_000,
+        step=100_000,
+        value=st.session_state.goal
+    )
+
+    if st.button("Lưu mục tiêu"):
+        st.session_state.goal = new_goal
+        st.success("Đã cập nhật mục tiêu!")
+
+    progress = min(
+        st.session_state.money / st.session_state.goal,
+        1
+    )
+
+    st.progress(progress)
+
+    st.write(
+        f"Tiến độ: **{progress * 100:.1f}%**"
+    )
+
+    if progress >= 1:
+        st.balloons()
+        st.success("🏆 CHÚC MỪNG! Bạn đã đạt mục tiêu!")
+
+# ==========================================
+# THÀNH TÍCH
+# ==========================================
+elif menu == "🏆 Thành tích":
+
+    st.header("🏆 Thành tích")
+
+    achievements = [
+        ("🌱", "Khởi đầu", "Bắt đầu hành trình tài chính"),
+        ("🔥", "7 ngày liên tiếp", "Duy trì streak 7 ngày"),
+        ("💰", "Người tiết kiệm", "Tiết kiệm được 1 triệu"),
+        ("🏦", "Kỷ luật tài chính", "Hoàn thành 20 nhiệm vụ"),
+        ("👑", "Money Master", "Đạt Level 10")
+    ]
+
+    for icon, name, description in achievements:
+
+        st.markdown(
+            f"""
+            <div class="card">
+                <h3>{icon} {name}</h3>
+                <p>{description}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
-        st.markdown("#### Công thức lãi đơn")
+st.divider()
 
-        st.latex(
-            r"A = P(1 + rt)"
-        )
-
-        st.write(
-            f"A = {so_tien:,.0f} × "
-            f"(1 + {r_nam:.4f} × {so_nam:.2f})"
-        )
-
-        st.write(
-            f"= **{tong_lai_don:,.0f} VNĐ**"
-        )
-
-        st.markdown("#### Công thức lãi kép")
-
-        st.latex(
-            r"A = P(1+r)^n"
-        )
-
-        st.write(
-            f"Lãi suất tháng = {r_thang * 100:.4f}%"
-        )
-
-        st.write(
-            f"A = {so_tien:,.0f} × "
-            f"(1 + {r_thang:.6f})^{so_thang}"
-        )
-
-        st.write(
-            f"= **{tong_lai_kep:,.0f} VNĐ**"
-        )
+st.caption(
+    f"MoneyGo • XP: {st.session_state.xp} • "
+    f"Level: {st.session_state.level} • "
+    f"Tiết kiệm: {st.session_state.money:,.0f}đ"
+)
