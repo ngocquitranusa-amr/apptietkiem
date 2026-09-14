@@ -1,126 +1,212 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-<meta charset="UTF-8">
-<title>App Tiết Kiệm</title>
-<style>
-body {
-    font-family: Arial;
-    max-width: 400px;
-    margin: 50px auto;
-    padding: 20px;
-    text-align: center;
-}
+import streamlit as st
 
-input, button {
-    width: 100%;
-    padding: 12px;
-    margin: 8px 0;
-    box-sizing: border-box;
-}
+# ==============================
+# CẤU HÌNH TRANG
+# ==============================
+st.set_page_config(
+    page_title="Tính tiền gửi tiết kiệm",
+    page_icon="🏦",
+    layout="centered"
+)
 
-button {
-    cursor: pointer;
-    background: #222;
-    color: white;
-    border: none;
-    border-radius: 6px;
-}
+st.title("🏦 TÍNH TIỀN GỬI TIẾT KIỆM")
+st.write("Tính toán tiền nhận được theo **lãi đơn** và **lãi kép**.")
 
-#balance {
-    font-size: 28px;
-    font-weight: bold;
-}
-</style>
-</head>
+st.divider()
 
-<body>
+# ==============================
+# NHẬP DỮ LIỆU
+# ==============================
 
-<h1>💰 Tiết Kiệm</h1>
+# Số tiền gửi
+so_tien = st.number_input(
+    "💰 Số tiền gửi (VNĐ)",
+    min_value=0,
+    value=100_000_000,
+    step=1_000_000,
+    format="%d"
+)
 
-<p>Số tiền đang tiết kiệm:</p>
-<div id="balance">0 VNĐ</div>
+# Số tháng gửi
+so_thang = st.number_input(
+    "📅 Số tháng gửi",
+    min_value=1,
+    value=12,
+    step=1
+)
 
-<input id="amount" type="number" placeholder="Nhập số tiền muốn nạp">
+# Lãi suất
+lai_suat = st.number_input(
+    "📈 Lãi suất (%/năm)",
+    min_value=0.0,
+    value=6.0,
+    step=0.1,
+    format="%.2f"
+)
 
-<p>Chọn ngày được phép rút:</p>
-<input id="unlockDate" type="date">
+st.divider()
 
-<button onclick="deposit()">🔒 Nạp tiền & khóa</button>
+# ==============================
+# NÚT TÍNH TOÁN
+# ==============================
 
-<button onclick="withdraw()">💸 Rút tiền</button>
+if st.button("🧮 TÍNH TOÁN", use_container_width=True):
 
-<p id="message"></p>
+    # Kiểm tra dữ liệu
+    if so_tien <= 0:
+        st.error("Vui lòng nhập số tiền gửi lớn hơn 0.")
+        st.stop()
 
-<script>
+    if so_thang <= 0:
+        st.error("Số tháng gửi phải lớn hơn 0.")
+        st.stop()
 
-let saving = JSON.parse(localStorage.getItem("saving")) || {
-    amount: 0,
-    unlockDate: null
-};
+    if lai_suat < 0:
+        st.error("Lãi suất không được nhỏ hơn 0.")
+        st.stop()
 
-function updateScreen() {
-    document.getElementById("balance").innerText =
-        saving.amount.toLocaleString("vi-VN") + " VNĐ";
-}
+    # ==========================================
+    # CHUYỂN ĐỔI LÃI SUẤT
+    # ==========================================
 
-function deposit() {
+    # Lãi suất năm dạng thập phân
+    r_nam = lai_suat / 100
 
-    let amount = Number(document.getElementById("amount").value);
-    let date = document.getElementById("unlockDate").value;
+    # Thời gian gửi theo năm
+    so_nam = so_thang / 12
 
-    if (amount <= 0 || !date) {
-        alert("Vui lòng nhập số tiền và ngày rút!");
-        return;
-    }
+    # ==========================================
+    # 1. TÍNH LÃI ĐƠN
+    # ==========================================
 
-    saving.amount += amount;
-    saving.unlockDate = new Date(date + "T00:00:00").getTime();
+    # Công thức:
+    # Tiền lãi = P * r * t
+    lai_don = so_tien * r_nam * so_nam
 
-    localStorage.setItem("saving", JSON.stringify(saving));
+    # Tổng tiền nhận được
+    tong_lai_don = so_tien + lai_don
 
-    document.getElementById("message").innerText =
-        "🔒 Đã khóa tiền đến ngày " +
-        new Date(saving.unlockDate).toLocaleDateString("vi-VN");
+    # ==========================================
+    # 2. TÍNH LÃI KÉP
+    # ==========================================
 
-    updateScreen();
-}
+    # Quy đổi lãi suất năm thành lãi suất tháng
+    r_thang = r_nam / 12
 
-function withdraw() {
+    # Công thức:
+    # A = P * (1 + r)^n
+    tong_lai_kep = so_tien * (1 + r_thang) ** so_thang
 
-    if (saving.amount <= 0) {
-        alert("Bạn chưa có tiền tiết kiệm!");
-        return;
-    }
+    # Tiền lãi
+    lai_kep = tong_lai_kep - so_tien
 
-    if (Date.now() < saving.unlockDate) {
+    # ==========================================
+    # HIỂN THỊ KẾT QUẢ
+    # ==========================================
 
-        alert(
-            "🔒 Chưa đến ngày được rút!\n\n" +
-            "Ngày được rút: " +
-            new Date(saving.unlockDate).toLocaleDateString("vi-VN")
-        );
+    st.success("✅ Đã tính toán thành công!")
 
-        return;
-    }
+    st.subheader("📊 KẾT QUẢ")
 
-    alert(
-        "✅ Rút thành công " +
-        saving.amount.toLocaleString("vi-VN") +
-        " VNĐ"
-    );
+    # ------------------------------------------
+    # LÃI ĐƠN
+    # ------------------------------------------
 
-    saving.amount = 0;
-    saving.unlockDate = null;
+    st.markdown("### 🔵 1. Lãi đơn")
 
-    localStorage.setItem("saving", JSON.stringify(saving));
+    col1, col2 = st.columns(2)
 
-    updateScreen();
-}
+    with col1:
+        st.metric(
+            "Tiền lãi",
+            f"{lai_don:,.0f} VNĐ"
+        )
 
-updateScreen();
+    with col2:
+        st.metric(
+            "Tổng tiền nhận",
+            f"{tong_lai_don:,.0f} VNĐ"
+        )
 
-</script>
+    # ------------------------------------------
+    # LÃI KÉP
+    # ------------------------------------------
 
-</body>
-</html>
+    st.markdown("### 🟢 2. Lãi kép")
+
+    col3, col4 = st.columns(2)
+
+    with col3:
+        st.metric(
+            "Tiền lãi",
+            f"{lai_kep:,.0f} VNĐ"
+        )
+
+    with col4:
+        st.metric(
+            "Tổng tiền nhận",
+            f"{tong_lai_kep:,.0f} VNĐ"
+        )
+
+    # ------------------------------------------
+    # SO SÁNH
+    # ------------------------------------------
+
+    st.divider()
+
+    st.subheader("📈 SO SÁNH")
+
+    chenh_lech = tong_lai_kep - tong_lai_don
+
+    st.write(
+        f"**Lãi kép cao hơn lãi đơn:** "
+        f"**{chenh_lech:,.0f} VNĐ**"
+    )
+
+    # ==========================================
+    # THÔNG TIN TÍNH TOÁN
+    # ==========================================
+
+    with st.expander("🔎 Xem chi tiết cách tính"):
+
+        st.write(f"**Số tiền gửi:** {so_tien:,.0f} VNĐ")
+        st.write(f"**Thời gian gửi:** {so_thang} tháng")
+        st.write(f"**Lãi suất:** {lai_suat:.2f}%/năm")
+
+        st.write(
+            f"**Thời gian quy đổi:** {so_nam:.2f} năm"
+        )
+
+        st.markdown("#### Công thức lãi đơn")
+
+        st.latex(
+            r"A = P(1 + rt)"
+        )
+
+        st.write(
+            f"A = {so_tien:,.0f} × "
+            f"(1 + {r_nam:.4f} × {so_nam:.2f})"
+        )
+
+        st.write(
+            f"= **{tong_lai_don:,.0f} VNĐ**"
+        )
+
+        st.markdown("#### Công thức lãi kép")
+
+        st.latex(
+            r"A = P(1+r)^n"
+        )
+
+        st.write(
+            f"Lãi suất tháng = {r_thang * 100:.4f}%"
+        )
+
+        st.write(
+            f"A = {so_tien:,.0f} × "
+            f"(1 + {r_thang:.6f})^{so_thang}"
+        )
+
+        st.write(
+            f"= **{tong_lai_kep:,.0f} VNĐ**"
+        )
