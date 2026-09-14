@@ -1,53 +1,21 @@
-function guiTien(soTien, ngayRut) {
-    const ngayHienTai = new Date();
-
-    const khoanTietKiem = {
-        soTien: soTien,
-        ngayGui: ngayHienTai,
-        ngayDuocRut: new Date(ngayRut),
-        daRut: false
+function deposit(amount, unlockDate) {
+    const saving = {
+        amount: amount,
+        unlockDate: new Date(unlockDate).getTime()
     };
 
-    localStorage.setItem(
-        "khoanTietKiem",
-        JSON.stringify(khoanTietKiem)
-    );
-
-    console.log("Đã khóa tiền đến ngày: " + ngayRut);
+    localStorage.setItem("saving", JSON.stringify(saving));
 }
 
-function rutTien() {
-    const data = JSON.parse(
-        localStorage.getItem("khoanTietKiem")
-    );
+function withdraw() {
+    const saving = JSON.parse(localStorage.getItem("saving"));
 
-    if (!data) {
-        alert("Chưa có khoản tiết kiệm!");
-        return;
+    if (!saving) return alert("Không có tiền tiết kiệm!");
+
+    if (Date.now() < saving.unlockDate) {
+        return alert("🔒 Tiền đang bị khóa, chưa đến ngày được rút!");
     }
 
-    const homNay = new Date();
-    const ngayDuocRut = new Date(data.ngayDuocRut);
-
-    if (homNay < ngayDuocRut) {
-        alert(
-            "Chưa đến ngày rút tiền!\n" +
-            "Bạn chỉ được rút vào: " +
-            ngayDuocRut.toLocaleDateString("vi-VN")
-        );
-        return;
-    }
-
-    if (data.daRut) {
-        alert("Khoản tiền này đã được rút.");
-        return;
-    }
-
-    data.daRut = true;
-    localStorage.setItem(
-        "khoanTietKiem",
-        JSON.stringify(data)
-    );
-
-    alert("Rút tiền thành công: " + data.soTien + " VNĐ");
+    alert(`💰 Rút thành công ${saving.amount.toLocaleString()} VNĐ`);
+    localStorage.removeItem("saving");
 }
